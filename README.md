@@ -53,7 +53,7 @@ This comparator is used with observed functions. If an observed function is call
 This comparator is used with observed functions. Use it to determine if an observed function is called with specific parameters.
 
 ### Observing functions
-Inject this function into your test to observe function calls. Syntax is similar to Jasmine's spyOn.
+Inject `observe` into your test to observe function calls. Syntax is similar to Jasmine's spyOn.
 
 ```js
 Test('Observed functions', ({ expect, observe }) => {
@@ -75,17 +75,19 @@ observe(obj, 'fn', false);
 ```
 
 ### Performing asynchronous tasks
-Inject this function to perform asynchronous tasks within your test.
+Inject `async` to perform asynchronous tasks within your test. This function includes a callback that you must call in order for Janus to know the test has finished.
 
 ```js
-Test('Asynchronous functions', ({ expect, sync }) => {
+Test('Asynchronous functions', ({ expect, async }) => {
 	let a = 100;
-	sync(() => new Promise(resolve) => {
-		a = 200;
-		resolve();
-	});
+	async((done) => {
+		setTimeout(() => {
+			a = 200;
+			expect(a).toBe(200);
 
-	expect(a).toBe(200);
+			done();
+		}, 500);
+	});
 });
 ```
 

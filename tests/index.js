@@ -60,15 +60,15 @@ Test('decolorize() logs the output color to the console', ({ expect, observe }) 
 	expect(console.log).toHaveBeenCalled();
 });
 
-Test('Asynchronous actions can be performed inside tests', ({ expect, sync }) => {
-	let value = 100;
-
-	sync(() => new Promise(resolve => {
-		value = 200;
-		resolve();
-	}));
-
-	expect(value).toBe(200);
+Test('Asynchronous actions can be performed inside tests', ({ expect, async }) => {
+	async((done) => {
+		let a = 100;
+		setTimeout(() => {
+			a = 200;
+			expect(a).toBe(200);
+			done();
+		}, 100);
+	});
 });
 
 Test('Observed functions do not have to call through to the actual function', ({ expect, observe }) => {

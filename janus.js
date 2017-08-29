@@ -11,6 +11,9 @@
 
 'use strict';
 
+// TODO: Figure out how this works and replicate it.
+const sync = require('deasync');
+
 /**
  * The property of an observed function that returns the amount of calls made to itself.
  */
@@ -39,11 +42,45 @@ function Test(testDescription, unit) {
 	const outputMessages = [];
 
 	const tools = {
-		/* jshint ignore:start */
-		async sync(fn) {
-			await fn();
+		async(fn) {
+			/**
+			 * Indicates if there's an error with the async function.
+			 */
+			let error = false;
+
+			/**
+			 * Indicates that the async function is complete.
+			 */
+			let done = false;
+
+			/**
+			 * The timer used to measure how long the async function ran for.
+			 */
+			let timer;
+
+			// The amount of time in milliseconds to wait for the async function to finish.
+			const TIMEOUT = 5000;
+
+			const cb = () => {
+				done = true;
+			};
+
+			// Call the async function with a callback to indicate it's done.
+			fn(cb);
+
+			// Only wait for 5 seconds before giving up.
+			timer = setTimeout(() => {
+				error = true;
+			}, TIMEOUT);
+
+			// Block event loop while waiting for async function to finish.
+			sync.loopWhile(() => !done && !error);
+
+			clearTimeout(timer);
+			if(error) {
+				console.log(`Async callback not called within ${TIMEOUT} milliseconds`);
+			}
 		},
-		/* jshint ignore:end */
 
 		observe(obj, fn, callActual = true) {
 			observedFunctions.add({obj, fn});
@@ -197,7 +234,10 @@ Test.prototype.log = (testDescription, errorMessages) => {
 	let output = `${testDescription}\n> `;
 	let passed = !(errorMessages.some(errorMessage => !errorMessage.passed));
 
-	if(passed === true) {
+	if(!errorMessages.length) {
+		output += 'ERROR: No tests were run';
+		passed = false;
+	} else if(passed === true) {
 		output += '[✔] Passed!';
 	} else {
 		output += '[✖] Failed.';
