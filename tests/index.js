@@ -66,6 +66,7 @@ Test('Asynchronous actions can be performed inside tests', ({ expect, async }) =
 		setTimeout(() => {
 			a = 200;
 			expect(a).toBe(200);
+
 			done();
 		}, 100);
 	});

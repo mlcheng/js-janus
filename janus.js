@@ -78,7 +78,7 @@ function Test(testDescription, unit) {
 
 			clearTimeout(timer);
 			if(error) {
-				console.log(`Async callback not called within ${TIMEOUT} milliseconds`);
+				console.log(`Async callback not invoked within ${TIMEOUT} milliseconds`);
 			}
 		},
 
@@ -87,7 +87,7 @@ function Test(testDescription, unit) {
 
 			obj[fn][CALL_COUNT] = 0;
 
-			obj[fn][ORIG_FN] = obj[fn].bind();
+			obj[fn][ORIG_FN] = obj[fn].bind(obj);
 
 			obj[fn] = new Proxy(obj[fn], {
 				apply(target, thisArg, args) {

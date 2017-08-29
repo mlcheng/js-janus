@@ -15,7 +15,7 @@ To test this function, first set the description of the test case.
 Test('1+1 equals 2');
 ```
 
-Specify the unit test and inject tools the test needs to complete
+Specify the unit test and inject tools that the test needs.
 
 ```javascript
 Test('1+1 should be 2', ({ expect }) => {
@@ -53,7 +53,7 @@ This comparator is used with observed functions. If an observed function is call
 This comparator is used with observed functions. Use it to determine if an observed function is called with specific parameters.
 
 ### Observing functions
-Inject `observe` into your test to observe function calls. Syntax is similar to Jasmine's spyOn.
+Inject `observe` into your test to observe function calls. The syntax is similar to Jasmine's spyOn.
 
 ```js
 Test('Observed functions', ({ expect, observe }) => {
@@ -68,14 +68,14 @@ Test('Observed functions', ({ expect, observe }) => {
 });
 ```
 
-By default, the observed function is called as usual. To stub it out, simply pass `false` as the third argument to `observe()`.
+By default, the observed function is called as usual if any tests invoke it. To stub it out, simply pass `false` as the third argument to `observe()`.
 
 ```js
 observe(obj, 'fn', false);
 ```
 
 ### Performing asynchronous tasks
-Inject `async` to perform asynchronous tasks within your test. This function includes a callback that you must call in order for Janus to know the test has finished.
+Inject `async` to perform asynchronous tasks within your test. This function includes a callback that you must call in order for Janus to know the test has finished. If the callback isn't invoked 5000ms, an error will be logged and the test will fail.
 
 ```js
 Test('Asynchronous functions', ({ expect, async }) => {
