@@ -80,7 +80,7 @@ Inject `async` to perform asynchronous tasks within your test. This function inc
 ```js
 Test('Asynchronous functions', ({ expect, async }) => {
 	let a = 100;
-	async((done) => {
+	async(done => {
 		setTimeout(() => {
 			a = 200;
 			expect(a).toBe(200);

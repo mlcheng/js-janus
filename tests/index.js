@@ -61,7 +61,7 @@ Test('decolorize() logs the output color to the console', ({ expect, observe }) 
 });
 
 Test('Asynchronous actions can be performed inside tests', ({ expect, async }) => {
-	async((done) => {
+	async(done => {
 		let a = 100;
 		setTimeout(() => {
 			a = 200;
