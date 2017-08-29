@@ -78,7 +78,7 @@ observe(obj, 'fn', false);
 Inject `async` to perform asynchronous tasks within your test. This function includes a callback that you must call in order for Janus to know the test has finished. If the callback isn't invoked 5000ms, an error will be logged and the test will fail.
 
 ```js
-Test('Asynchronous functions', ({ expect, async }) => {
+Test('Asynchronous functions', ({ async, expect }) => {
 	let a = 100;
 	async(done => {
 		setTimeout(() => {
