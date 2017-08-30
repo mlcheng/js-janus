@@ -130,9 +130,6 @@ async function testRunner() {
 			}
 		};
 
-		// TODO: Is this even needed?
-		restoreObservedFunctions(observedFunctions);
-
 		// Inject tools and run the specified test.
 		test.unit(tools);
 
