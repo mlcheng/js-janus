@@ -2,6 +2,8 @@
 
 Looking for a no-nonsense testing framework for JavaScript? This is probably what you came for. Named after [Janus](https://wikipedia.org/wiki/Janus) - the ancient Roman gatekeeper - Janus.js is here to keep wrong code from entering your codebase.
 
+**Caution**: This probably _isn't_ what you came for. As is, the framework still causes side effects everywhere - which is the problem it was trying to solve. [This commit](https://github.com/mlcheng/js-janus/commit/87269fe8a3cd2113f6e1972f3e001d8d1264e7fe) probably fixes it, but introduces an extra dependency on a third-party library.
+
 ## Usage
 Usage is fairly simple. Let's first setup an `add()` function.
 
