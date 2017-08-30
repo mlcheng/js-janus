@@ -59,13 +59,13 @@ async function testRunner() {
 		const outputMessages = [];
 
 		/**
-		 * Stores functions declared as async that are to be resolved.
+		 * Stores the async test.
 		 */
-		const asyncFunctions = [];
+		let isAsync = undefined;
 
 		const tools = {
 			async(fn) {
-				asyncFunctions.push(fn);
+				isAsync = fn;
 			},
 
 			observe(obj, fn, callActual = true) {
@@ -81,7 +81,7 @@ async function testRunner() {
 						obj[fn][CALLS] = args;
 
 						// Only call through to the actual function if specified.
-						if(callActual) Reflect.apply(target, thisArg, args);
+						if(callActual) return Reflect.apply(target, thisArg, args);
 					}
 				});
 			},
@@ -130,18 +130,18 @@ async function testRunner() {
 			}
 		};
 
+		restoreObservedFunctions(observedFunctions);
+
 		// Inject tools and run the specified test.
 		test.unit(tools);
 
-		// If there are any async functions to run, run them.
-		if(asyncFunctions.length) {
-			restoreObservedFunctions(observedFunctions);
-
-			await Promise.all(
-				asyncFunctions.map(fn => new Promise(resolve =>
-					fn(resolve)
-				))
-			);
+		// If the test is asynchronous, resolve it.
+		if(isAsync) {
+			try {
+				await new Promise(resolve => isAsync(resolve));
+			} catch(e) {
+				console.log(e);
+			}
 		}
 
 		restoreObservedFunctions(observedFunctions);
@@ -150,10 +150,12 @@ async function testRunner() {
 		Test.prototype.log(test.testDescription, outputMessages);
 
 		// Update the suite's pass/fail stats.
-		if(outputMessages.some(message => !message.passed)) {
-			testsFailed++;
-		} else {
-			testsPassed++;
+		if(outputMessages.length) {
+			if(outputMessages.some(message => !message.passed)) {
+				testsFailed++;
+			} else {
+				testsPassed++;
+			}
 		}
 
 		// Indicate that the test has finished.
@@ -170,12 +172,21 @@ async function testRunner() {
 	 */
 	let testsFailed = 0;
 
+	// Find the tests to run, using only focused tests or all tests.
+	const focusedTests = TESTS_TO_RUN.filter(test => test.focus);
+	const testsToRun = [];
+	if(focusedTests.length) {
+		testsToRun.push(...focusedTests);
+	} else {
+		testsToRun.push(...TESTS_TO_RUN);
+	}
+
 	// Wait for all tests to resolve before continuing
-	await Promise.all(TESTS_TO_RUN.map(resolveTest));
+	await Promise.all(testsToRun.map(resolveTest));
 
 	// All tests have finished.
 	// Log final messages to the user to show suite results.
-	const amntTests = TESTS_TO_RUN.length;
+	const amntTests = testsToRun.length;
 	const suitePassed = testsPassed === amntTests;
 	const testsStr = amntTests === 1 ? 'test' : 'tests';
 
@@ -194,6 +205,10 @@ async function testRunner() {
 
 function Test(testDescription, unit) {
 	TESTS_TO_RUN.push({ testDescription, unit });
+}
+
+function fTest(testDescription, unit) {
+	TESTS_TO_RUN.push({ testDescription, unit, focus: true });
 }
 
 Test.prototype.ValidationFunction = {
@@ -226,7 +241,7 @@ Test.prototype.ValidationFunction = {
 
 	CALLED(fn) {
 		if(!fn.hasOwnProperty(CALL_COUNT)) {
-			throw new Error('Function was not observed');
+			console.log('Function was not observed');
 		}
 
 		return fn[CALL_COUNT] >= 0;
@@ -234,7 +249,7 @@ Test.prototype.ValidationFunction = {
 
 	CALLED_WITH(fn, args) {
 		if(!fn.hasOwnProperty(CALLS)) {
-			throw new Error('Function was not observed');
+			console.log('Function was not observed');
 		}
 
 		return Test.prototype.ValidationFunction.EQUALS(fn[CALLS], args);
@@ -310,5 +325,5 @@ if(typeof module !== 'undefined') {
 		vm.runInThisContext(fs.readFileSync(PATH, 'utf8'), PATH);
 	};
 
-	module.exports = { Test, inject };
+	module.exports = { Test, fTest, inject };
 }

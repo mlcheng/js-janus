@@ -78,17 +78,15 @@ observe(obj, 'fn', false);
 Inject `async` to perform asynchronous tasks within your test. This function includes a callback that you must call in order for Janus to know the test has finished. If the callback isn't invoked 5000ms, an error will be logged and the test will fail.
 
 ```js
-Test('Asynchronous functions', ({ async, expect }) => {
+Test('Asynchronous functions', ({ async, expect }) => async(done => {
 	let a = 100;
-	async(done => {
-		setTimeout(() => {
-			a = 200;
-			expect(a).toBe(200);
+	setTimeout(() => {
+		a = 200;
+		expect(a).toBe(200);
 
-			done();
-		}, 500);
-	});
-});
+		done();
+	}, 500);
+}));
 ```
 
 ## Real-world usage
@@ -103,9 +101,11 @@ Where `context` is usually the NodeJS global `__dirname`. A sample test file wou
 ```javascript
 'use strict';
 
-const { Test, inject } = require('path/to/test.js');
+const { Test, fTest, inject } = require('path/to/test.js');
 inject(__dirname, '../relative/path/to/file-to-test.js');
 
 // Begin tests
 Test(...)
 ```
+
+Similar to Jasmine, `fTest` focuses on the tests specified and will only run those marked with `fTest`.
