@@ -52,7 +52,7 @@ This comparator is used with observed functions. If an observed function is call
 #### `.toHaveBeenCalledWith()`
 This comparator is used with observed functions. Use it to determine if an observed function is called with specific parameters.
 
-### Observing functions
+### Observations
 Inject `observe` into your test to observe function calls. The syntax is similar to Jasmine's spyOn.
 
 ```js
@@ -74,7 +74,7 @@ By default, the observed function is called as usual if any tests invoke it. To 
 observe(obj, 'fn', false);
 ```
 
-### Performing asynchronous tasks
+### Asynchronous tests
 Inject `async` to perform asynchronous tasks within your test. This function includes a callback that you must call in order for Janus to know the test has finished. If the callback isn't invoked 5000ms, the test will log a warning. Remember to call the callback.
 
 ```js
