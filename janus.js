@@ -33,20 +33,32 @@ const ORIG_FN = Symbol('observed-function-original-function');
  */
 const CALLS = Symbol('observed-function-calls');
 
+/**
+ * The maximum amount of time an asynchronous test can run for.
+ */
+const ASYNC_MAX_RUNTIME = 5000;
+
+/**
+ * Logs messages to the console. Uses `process` if running in the Node environment.
+ */
+const Logger = {
+	log(message) {
+		// Use console by default.
+		let logger = console.log.bind(console);
+
+		// Otherwise, if running in Node, use process.stdout.write.
+		if(typeof process !== 'undefined') {
+			logger = process.stdout.write.bind(process.stdout);
+		}
+
+		logger(message);
+	}
+}
+
 // After all tests are added to the queue, run the tests.
 setTimeout(testRunner);
 
 async function testRunner() {
-	/**
-	 * Restore observed functions to the original one. This avoids any potential side effects :D
-	 * @param  {Set} observedFunctions The set of observed functions to restore.
-	 */
-	function restoreObservedFunctions(observedFunctions) {
-		observedFunctions.forEach(obs => {
-			obs.obj[obs.fn] = obs.obj[obs.fn][ORIG_FN];
-		});
-	}
-
 	async function resolveTest(test) {
 		/**
 		 * Retains information about observed functions so that they can be restored after the unit test ends.
@@ -59,7 +71,7 @@ async function testRunner() {
 		const outputMessages = [];
 
 		/**
-		 * Stores the async test.
+		 * Stores the async test if it is defined as asynchronous.
 		 */
 		let isAsync = undefined;
 
@@ -73,6 +85,7 @@ async function testRunner() {
 
 				obj[fn][CALL_COUNT] = 0;
 
+				// TODO: does it matter what it's bound to?
 				obj[fn][ORIG_FN] = obj[fn].bind(obj);
 
 				obj[fn] = new Proxy(obj[fn], {
@@ -115,7 +128,7 @@ async function testRunner() {
 				comparators.toHaveBeenCalled = () => {
 					outputMessages.push({
 						passed: Test.prototype.ValidationFunction.CALLED(actual),
-						errorFragment: `${Test.prototype.stringify(actual)} to have been called`
+						errorFragment: `function to have been called`
 					});
 				};
 
@@ -130,22 +143,49 @@ async function testRunner() {
 			}
 		};
 
+		// Show the test description.
+		Test.prototype.logDescription(test.testDescription);
+
 		// Inject tools and run the specified test.
-		test.unit(tools);
+		try {
+			test.unit(tools);
+		} catch(e) {
+			Test.prototype.logError(e);
+		}
 
 		// If the test is asynchronous, resolve it.
 		if(isAsync) {
+			// TODO: consider overriding setTimeout so tests don't really run that long. May want to have a generic observe function somewhere.
+
+			/**
+			 * The timer used to reject the asynchronous test if it didn't finish within the amount of time allotted.
+			 */
+			let timer;
+
+			const timerPromise = new Promise((resolve, reject) => {
+				timer = setTimeout(() => {
+					reject(`Asynchronous test did not finish within the allotted time of ${ASYNC_MAX_RUNTIME}ms. Remember to call the async callback.`);
+				}, ASYNC_MAX_RUNTIME);
+			});
+
+			const asyncPromise = new Promise(resolve => isAsync(resolve));
+
 			try {
-				await new Promise(resolve => isAsync(resolve));
+				// Wait for either the timer to resolve or the async test. Max runtime of 5 seconds is allowed per test.
+				await Promise.race([asyncPromise, timerPromise]);
+				clearTimeout(timer);
 			} catch(e) {
-				console.log(e);
+				Test.prototype.logError(e);
 			}
 		}
 
-		restoreObservedFunctions(observedFunctions);
+		// Restore observed functions to the original one. This avoids any potential side effects :D
+		observedFunctions.forEach(obs => {
+			obs.obj[obs.fn] = obs.obj[obs.fn][ORIG_FN];
+		});
 
 		// Log the output to the console.
-		Test.prototype.log(test.testDescription, outputMessages);
+		Test.prototype.logResult(outputMessages);
 
 		// Update the suite's pass/fail stats.
 		if(outputMessages.length) {
@@ -170,7 +210,7 @@ async function testRunner() {
 	 */
 	let testsFailed = 0;
 
-	// Find the tests to run, using only focused tests or all tests.
+	// Find the tests to run, using only focused tests if some are specified, or all tests.
 	const focusedTests = TESTS_TO_RUN.filter(test => test.focus);
 	const testsToRun = [];
 	if(focusedTests.length) {
@@ -179,8 +219,11 @@ async function testRunner() {
 		testsToRun.push(...TESTS_TO_RUN);
 	}
 
-	// Wait for all tests to resolve before continuing
-	await Promise.all(testsToRun.map(resolveTest));
+	// Wait for all tests to resolve before continuing.
+	// This runs tests suquentially and blocks subsequent tests from running, preventing problems when observing asynchronously.
+	// Reference: https://www.reddit.com/r/webdev/comments/6x7i77/recommended_6_reasons_why_javascripts_asyncawait/dmeze0o/
+	await testsToRun.reduce((previousPromise, test) =>
+		previousPromise.then(() => resolveTest(test)), Promise.resolve());
 
 	// All tests have finished.
 	// Log final messages to the user to show suite results.
@@ -188,16 +231,16 @@ async function testRunner() {
 	const suitePassed = testsPassed === amntTests;
 	const testsStr = amntTests === 1 ? 'test' : 'tests';
 
-	console.log('======================================');
+	Logger.log('======================================\n\n');
 
 	Test.prototype.colorize(suitePassed);
 	if(suitePassed) {
-		console.log('CONGRATS!');
+		Logger.log('CONGRATS!\n');
 	} else {
-		console.log(`Failed ${testsFailed} of ${amntTests} ${testsStr}.`);
+		Logger.log(`Failed ${testsFailed} of ${amntTests} ${testsStr}.\n`);
 	}
-	console.log(`Passed ${testsPassed} of ${amntTests} ${testsStr}.`);
-	console.log(`Finished ${amntTests} ${testsStr}.`);
+	Logger.log(`Passed ${testsPassed} of ${amntTests} ${testsStr}.\n`);
+	Logger.log(`Finished ${amntTests} ${testsStr}.\n\n`);
 	Test.prototype.decolorize();
 }
 
@@ -208,6 +251,8 @@ function Test(testDescription, unit) {
 function fTest(testDescription, unit) {
 	TESTS_TO_RUN.push({ testDescription, unit, focus: true });
 }
+
+// TODO: why is there a prototype??
 
 Test.prototype.ValidationFunction = {
 	/**
@@ -237,55 +282,97 @@ Test.prototype.ValidationFunction = {
 			level.every(k => Test.prototype.ValidationFunction.EQUALS(expected[k], actual[k]));
 	},
 
+	/**
+	 * Specifies if an observed function was called.
+	 */
 	CALLED(fn) {
 		if(!fn.hasOwnProperty(CALL_COUNT)) {
-			console.log('Function was not observed');
+			Test.prototype.logError('Function was not observed');
 		}
 
-		return fn[CALL_COUNT] >= 0;
+		return fn[CALL_COUNT] > 0;
 	},
 
+	/**
+	 * Specifies if an observed function was called with the correct arguments.
+	 */
 	CALLED_WITH(fn, args) {
 		if(!fn.hasOwnProperty(CALLS)) {
-			console.log('Function was not observed');
+			Test.prototype.logError('Function was not observed');
 		}
 
 		return Test.prototype.ValidationFunction.EQUALS(fn[CALLS], args);
 	}
 };
 
-Test.prototype.stringifyArgs = (args) => args.map(arg => {
-	return Test.prototype.stringify(arg);
-}).join(', ');
+/**
+ * Display function arguments as a readable string.
+ */
+Test.prototype.stringifyArgs = args => args
+	.map(arg => Test.prototype.stringify(arg))
+	.join(', ');
 
-Test.prototype.stringify = (s) => {
+/**
+ * Display a variable as a string. Shows strings in quotes and stringifies objects.
+ */
+Test.prototype.stringify = s => {
 	if(typeof s === 'string') {
 		return `"${s}"`;
 	} else if(typeof s === 'function' && s[CALLS]) {
 		return Test.prototype.stringifyArgs(s[CALLS]);
 	} else {
-		return JSON.stringify(s);
+		return JSON.stringify(s, (k, v) =>
+			typeof v === 'function' ? 'Function() { [native code] }' : v
+		);
 	}
 };
 
-Test.prototype.colorize = (success) => {
+/**
+ * Colorize the console output based on whether or not the output is successful.
+ * @param  {Boolean} success Whether or not the output is successful. True indicates the console will be green. Red otherwise.
+ */
+Test.prototype.colorize = success => {
+	// http://jafrog.com/2013/11/23/colors-in-terminal.html
 	let colorOut = '';
 
 	if(success) {
-		colorOut += '\x1b[49m\x1b[92m';
+		colorOut += '\x1b[32;1m';
 	} else {
-		colorOut += '\x1b[101m\x1b[93m';
+		colorOut += '\x1b[31;1m';
 	}
 
-	console.log(colorOut);
+	Logger.log(colorOut);
 };
 
+/**
+ * Reset the console color.
+ */
 Test.prototype.decolorize = () => {
-	console.log('\x1b[0m'); // Reset.
+	Logger.log('\x1b[0m'); // Reset.
 };
 
-Test.prototype.log = (testDescription, errorMessages) => {
-	let output = `${testDescription}\n> `;
+/**
+ * Log the test description to the console. The output is not colorized.
+ */
+Test.prototype.logDescription = testDescription => {
+	Logger.log(`${testDescription}\n`);
+};
+
+/**
+ * Log an error to the console. The error is colorized. The error message is stringified so that the error doesn't kill the process as it's being logged.
+ */
+Test.prototype.logError = error => {
+	Test.prototype.colorize(false);
+	// If the error is directly logged to stdout without toString(), the return code kills the process I think.
+	Logger.log(`${error.toString()}\n`);
+	Test.prototype.decolorize();
+};
+
+/**
+ * Log the test result to the console. The output is colorized.
+ */
+Test.prototype.logResult = errorMessages => {
+	let output = '';
 	let passed = !(errorMessages.some(errorMessage => !errorMessage.passed));
 
 	if(!errorMessages.length) {
@@ -294,7 +381,7 @@ Test.prototype.log = (testDescription, errorMessages) => {
 	} else if(passed === true) {
 		output += '[✔] Passed!';
 	} else {
-		output += '[✖] Failed.';
+		output += '[✖] Failed.'; // 😵
 		output += errorMessages.map(errorMessage => {
 			// Don't show the error fragment if it passed.
 			if(errorMessage.passed) return;
@@ -303,8 +390,9 @@ Test.prototype.log = (testDescription, errorMessages) => {
 		}).join('');
 	}
 
+	Logger.log('> ');
 	Test.prototype.colorize(passed);
-	console.log(`${output}`);
+	Logger.log(`${output}\n\n`);
 	Test.prototype.decolorize();
 };
 
