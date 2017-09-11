@@ -2,8 +2,6 @@
 
 Looking for a no-nonsense testing framework for JavaScript? This is probably what you came for. Named after [Janus](https://wikipedia.org/wiki/Janus) - the ancient Roman gatekeeper - Janus.js is here to keep wrong code from entering your codebase.
 
-**Caution**: This probably _isn't_ what you came for. As is, the framework still causes side effects everywhere - which is the problem it was trying to solve. [This commit](https://github.com/mlcheng/js-janus/commit/87269fe8a3cd2113f6e1972f3e001d8d1264e7fe) probably fixes it, but introduces an extra dependency on a third-party library.
-
 ## Usage
 Usage is fairly simple. Let's first setup an `add()` function.
 
@@ -77,7 +75,7 @@ observe(obj, 'fn', false);
 ```
 
 ### Performing asynchronous tasks
-Inject `async` to perform asynchronous tasks within your test. This function includes a callback that you must call in order for Janus to know the test has finished. If the callback isn't invoked 5000ms, an error will be logged and the test will fail.
+Inject `async` to perform asynchronous tasks within your test. This function includes a callback that you must call in order for Janus to know the test has finished. If the callback isn't invoked 5000ms, the test will log a warning. Remember to call the callback.
 
 ```js
 Test('Asynchronous functions', ({ async, expect }) => async(done => {
