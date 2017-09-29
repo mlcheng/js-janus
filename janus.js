@@ -53,7 +53,7 @@ const Logger = {
 
 		logger(message);
 	}
-}
+};
 
 // After all tests are added to the queue, run the tests.
 setTimeout(testRunner);

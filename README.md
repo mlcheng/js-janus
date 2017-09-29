@@ -35,7 +35,7 @@ The most important function to inject into your test is `expect`. This function 
 Test('Expectations', ({ expect }) => {
 	const a = 100;
 	expect(a).toBe(100);
-})
+});
 ```
 
 Supported comparators are below.
