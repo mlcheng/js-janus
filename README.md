@@ -90,7 +90,7 @@ Test('Asynchronous functions', ({ async, expect }) => async(done => {
 ```
 
 ## Configuration
-The `janus` object contains settings for the entire test suite.
+The `janus` object contains settings for the entire test suite. This is exported from the main file as `janus`.
 
 ### `ASYNC_MAX_RUNTIME`
 The `ASYNC_MAX_RUNTIME` is the maximum amount of time an asynchronous test can run inside the `async` call. By default, this is 5 seconds.
@@ -103,7 +103,7 @@ A sample custom matcher is:
 ```js
 janus.addMatcher('toContain', (expected, actual) => {
 	return actual.includes(expected);
-})
+});
 ```
 
 ## Real-world usage
