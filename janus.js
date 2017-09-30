@@ -13,6 +13,9 @@
 
 // jshint ignore:start
 
+// After all tests are added to the queue, run the tests.
+setTimeout(testRunner);
+
 /**
  * Keeps track of all tests that need to be run.
  */
@@ -55,8 +58,23 @@ const Logger = {
 	}
 };
 
-// After all tests are added to the queue, run the tests.
-setTimeout(testRunner);
+/**
+ * The Janus object. Should contain configs, etc.
+ * TODO: Maybe move the Test prototype here? It makes no sense to be in the prototype anyway.
+ */
+const janus = {
+	matchers: {},
+	ASYNC_MAX_RUNTIME
+};
+
+/**
+ * Add a custom matcher to Janus. These matchers persist through the entire test suite.
+ * @param  {String} matcher The name of the matcher, to be used after an expectation, e.g. expect().toContain(...).
+ * @param  {Function} fn The matcher function. Takes in an expected and actual value.
+ */
+janus.addMatcher = (matcher, fn) => {
+	janus.matchers[matcher] = fn;
+};
 
 async function testRunner() {
 	async function resolveTest(test) {
@@ -101,6 +119,15 @@ async function testRunner() {
 
 			expect(actual) {
 				const comparators = {};
+
+				Object.keys(janus.matchers).forEach(matcher => {
+					comparators[matcher] = (expected) => {
+						outputMessages.push({
+							passed: janus.matchers[matcher](expected, actual),
+							errorFragment: `${Test.prototype.stringify(actual)} ${matcher} ${Test.prototype.stringify(expected)}`
+						});
+					};
+				});
 
 				/**
 				 * Expects two values to be exactly the same one.
@@ -164,8 +191,8 @@ async function testRunner() {
 
 			const timerPromise = new Promise((resolve, reject) => {
 				timer = setTimeout(() => {
-					reject(`Asynchronous test did not finish within the allotted time of ${ASYNC_MAX_RUNTIME}ms. Remember to call the async callback.`);
-				}, ASYNC_MAX_RUNTIME);
+					reject(`Asynchronous test did not finish within the allotted time of ${janus.ASYNC_MAX_RUNTIME}ms, defined in janus.ASYNC_MAX_RUNTIME. Remember to call the async callback.`);
+				}, janus.ASYNC_MAX_RUNTIME);
 			});
 
 			const asyncPromise = new Promise(resolve => isAsync(resolve));
@@ -411,5 +438,5 @@ if(typeof module !== 'undefined') {
 		vm.runInThisContext(fs.readFileSync(PATH, 'utf8'), PATH);
 	};
 
-	module.exports = { Test, fTest, inject };
+	module.exports = { Test, fTest, inject, janus };
 }

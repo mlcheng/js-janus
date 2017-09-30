@@ -12,7 +12,7 @@
 'use strict';
 
 /* globals require */
-const { fTest, Test, inject } = require('../janus.js');
+const { fTest, Test, inject, janus } = require('../janus.js');
 
 
 Test('fTest() is a function', ({ expect }) => {
@@ -30,6 +30,14 @@ Test('Tests receive injected tools needed to run tests', ({ expect }) => {
 	expect(typeof toEqual).toBe('function');
 	expect(typeof toHaveBeenCalled).toBe('function');
 	expect(typeof toHaveBeenCalledWith).toBe('function');
+});
+
+Test('Custom matcher functions can be added', ({ expect }) => {
+	janus.addMatcher('toContain', (expected, actual) => {
+		return actual.includes(expected);
+	});
+
+	expect('hello').toContain('ll');
 });
 
 Test('The EXACT validation function determines if 2 inputs are the same', ({ expect }) => {

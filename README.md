@@ -89,6 +89,23 @@ Test('Asynchronous functions', ({ async, expect }) => async(done => {
 }));
 ```
 
+## Configuration
+The `janus` object contains settings for the entire test suite.
+
+### `ASYNC_MAX_RUNTIME`
+The `ASYNC_MAX_RUNTIME` is the maximum amount of time an asynchronous test can run inside the `async` call. By default, this is 5 seconds.
+
+### `.addMatcher()`
+Custom matchers can be added to your Janus test suite. The first parameter is the name of the matcher, such as `toContain`. Then, the matcher function will receive the `expected` and the `actual` value. These values are `expect(actual).toBe(expected)`.
+
+A sample custom matcher is:
+
+```js
+janus.addMatcher('toContain', (expected, actual) => {
+	return actual.includes(expected);
+})
+```
+
 ## Real-world usage
 When you want to test your code, require `test.js` in your file. An exported `inject()` function will allow you to inject any file into the test scenario and run it in the context of your test. The syntax of `inject()` is as follows:
 
