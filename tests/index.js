@@ -75,8 +75,11 @@ Test('The CALLED_WITH validation function determines if an observed function was
 });
 
 Test('stringifyArgs() displays function arguments as a string', ({ expect }) => {
-	const args = ['lynn', 'honey'];
-	expect(Test.prototype.stringifyArgs(args)).toBe('"lynn", "honey"');
+	const args = ['foo', 'bar'];
+	expect(Test.prototype.stringifyArgs(args)).toBe('"foo", "bar"');
+
+	const arg = ['baz'];
+	expect(Test.prototype.stringifyArgs(args)).toBe('"baz"');
 });
 
 Test('stringify() surrounds strings with quotes', ({ expect }) => {
