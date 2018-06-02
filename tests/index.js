@@ -79,7 +79,7 @@ Test('stringifyArgs() displays function arguments as a string', ({ expect }) => 
 	expect(Test.prototype.stringifyArgs(args)).toBe('"foo", "bar"');
 
 	const arg = ['baz'];
-	expect(Test.prototype.stringifyArgs(args)).toBe('"baz"');
+	expect(Test.prototype.stringifyArgs(arg)).toBe('"baz"');
 });
 
 Test('stringify() surrounds strings with quotes', ({ expect }) => {
