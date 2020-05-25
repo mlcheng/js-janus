@@ -32,7 +32,7 @@ This test framework also has some extras that may be useful. Your unit test can 
 The most important function to inject into your test is `expect`. This function allows you to make assertions on your code.
 
 ```js
-Test('Expectations', ({ expect }) => {
+test('Expectations', ({ expect }) => {
 	const a = 100;
 	expect(a).toBe(100);
 });
@@ -59,7 +59,7 @@ This comparator is used with observed functions. Use it to determine if an obser
 Inject `observe` into your test to observe function calls. The syntax is similar to Jasmine's spyOn.
 
 ```js
-Test('Observed functions', ({ expect, observe }) => {
+test('Observed functions', ({ expect, observe }) => {
 	const obj = {
 		fn() {}
 	};
