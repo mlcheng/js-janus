@@ -141,7 +141,11 @@ setTimeout(async () => {
 		const matchers = generateMatchers(spec);
 		const features = generateFeatures(spec, matchers);
 
-		await spec.body(features);
+		try {
+			await spec.body(features);
+		} catch(e) {
+			logError(e);
+		}
 
 		if(spec.failed) {
 			failures++;
